@@ -44,14 +44,22 @@ app.post('/api/submit-score', async (req, res) => {
             console.log(
                 `기존 사용자 발견: 기존 최고 점수 = ${existingUser.rows[0].high_score}, 제출된 점수 = ${score}, 최종 최고 점수 = ${high_score}`
             );
-        }
 
-        // 새로운 점수 삽입
-        await pool.query(
-            `INSERT INTO ranking (device_id, ip_address, score, nickname, high_score)
-            VALUES ($1, $2, $3, $4, $5)`,
-            [device_id, ip_address, score, nickname, high_score]
-        );
+            // 기존 사용자의 점수 업데이트
+            await pool.query(
+                `UPDATE ranking
+                 SET score = $1, nickname = $2, high_score = $3, datetime = NOW()
+                 WHERE device_id = $4`,
+                [score, nickname, high_score, device_id]
+            );
+        } else {
+            // 새로운 사용자라면 데이터 삽입
+            await pool.query(
+                `INSERT INTO ranking (device_id, ip_address, score, nickname, high_score)
+                VALUES ($1, $2, $3, $4, $5)`,
+                [device_id, ip_address, score, nickname, high_score]
+            );
+        }
 
         console.log(
             `점수가 성공적으로 제출되었습니다: 닉네임 = ${nickname}, 점수 = ${score}, 최고 점수 = ${high_score}`
@@ -67,12 +75,15 @@ app.post('/api/submit-score', async (req, res) => {
 app.get('/api/ranking', async (req, res) => {
     try {
         console.log('랭킹 데이터 요청을 받았습니다.');
+
+        // 각 device_id의 최고 점수(high_score)만 가져옴
         const result = await pool.query(
-            `SELECT nickname, high_score
+            `SELECT DISTINCT ON (device_id) nickname, high_score
             FROM ranking
-            ORDER BY high_score DESC, datetime ASC
+            ORDER BY device_id, high_score DESC, datetime ASC
             LIMIT 100`
         );
+
         console.log('랭킹 데이터를 성공적으로 조회했습니다.');
         res.json({ rankings: result.rows });
     } catch (err) {
