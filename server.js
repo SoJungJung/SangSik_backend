@@ -3,18 +3,20 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 5001;
+require('dotenv').config(); // .env 파일에 정의된 환경변수 로드
 
 const { Pool } = require('pg');
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'sangsikdb',
-    password: '1234',
-    port: 5432,
+    connectionString: process.env.DATABASE_URL, // 환경변수로부터 DB URL 로드
+    ssl: {
+        rejectUnauthorized: false,
+    },
 });
 
 // 미들웨어 설정
-app.use(cors());
+app.use(cors({ origin: '*' })); // 모든 도메인에서의 요청 허용
+app.use(express.json());
+
 app.use(bodyParser.json());
 
 // 로깅 미들웨어 설정 (모든 요청에 대해 로그 출력)
@@ -71,16 +73,20 @@ app.post('/api/submit-score', async (req, res) => {
     }
 });
 
-// 랭킹 가져오기 엔드포인트
 app.get('/api/ranking', async (req, res) => {
     try {
         console.log('랭킹 데이터 요청을 받았습니다.');
 
         // 각 device_id의 최고 점수(high_score)만 가져옴
         const result = await pool.query(
-            `SELECT DISTINCT ON (device_id) nickname, high_score
-            FROM ranking
-            ORDER BY device_id, high_score DESC, datetime ASC
+            `SELECT nickname, high_score
+            FROM (
+                SELECT device_id, nickname, high_score,
+                        ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY high_score DESC) as rn
+                FROM ranking
+            ) subquery
+            WHERE rn = 1
+            ORDER BY high_score DESC
             LIMIT 100`
         );
 
@@ -91,7 +97,6 @@ app.get('/api/ranking', async (req, res) => {
         res.status(500).json({ error: '랭킹을 가져오지 못했습니다' });
     }
 });
-
 // 오류 처리 미들웨어 (예외 처리)
 app.use((err, req, res, next) => {
     console.error('서버 오류:', err.stack);
