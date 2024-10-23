@@ -23,6 +23,11 @@ app.use(express.json());
 
 app.use(bodyParser.json());
 
+// 백엔드 코드 (server.js 또는 app.js)
+app.get("/api/ping", (req, res) => {
+  res.json({ message: "Backend is connected successfully!" });
+});
+
 // 로깅 미들웨어 설정 (모든 요청에 대해 로그 출력)
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} 요청: ${req.url}`);
