@@ -8,9 +8,6 @@ require("dotenv").config(); // .env 파일에 정의된 환경변수 로드
 const { Pool } = require("pg");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // 환경변수로부터 DB URL 로드
-  ssl: {
-    rejectUnauthorized: false,
-  },
 });
 
 // 미들웨어 설정
