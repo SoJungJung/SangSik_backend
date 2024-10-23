@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3001;
 require('dotenv').config(); // .env 파일에 정의된 환경변수 로드
 
 const { Pool } = require('pg');
