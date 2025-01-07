@@ -13,13 +13,15 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL, // .env에서 DATABASE_URL 로드
 });
 
+const allowedOrigins = ['https://web-sangsikquiz-m2l7w1ydc2132f7e.sel4.cloudtype.app', 'https://molsangsik.kr'];
+
 // 미들웨어 설정
 app.use(
     cors({
-        // 프론트엔드 앱 주소 (예시: cloudtype.app)
-        origin: 'https://web-sangsikquiz-m2l7w1ydc2132f7e.sel4.cloudtype.app',
+        origin: allowedOrigins,
     })
 );
+
 app.use(express.json());
 app.use(bodyParser.json());
 
@@ -35,12 +37,6 @@ app.use((req, res, next) => {
     next();
 });
 
-/**
- * /api/submit-score
- * - 클라이언트로부터 device_id, score, nickname을 받아,
- *   이미 존재하는 device_id면 high_score 갱신,
- *   처음이면 새로 삽입
- */
 app.post('/api/submit-score', async (req, res) => {
     const { device_id, score, nickname, ip_address } = req.body;
     // 기본적으로 클라이언트 IP를 가져오되, body에 ip_address 있으면 우선
